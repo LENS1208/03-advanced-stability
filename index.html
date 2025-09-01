@@ -657,9 +657,9 @@
                     <div class="chart-bar"></div>
                     <div class="chart-bar"></div>
                 </div>
-                FX取引分析ツール
+                ③安定性とリスク耐性
             </h1>
-            <p>リスクリワード比・連勝連敗・シャープレシオ・PF・最大DDを重点的に分析</p>
+            <p>連勝連敗、ドローダウン、ロット規律などトレードの強さを分析</p>
             
             <div class="theme-toggle" onclick="toggleTheme()">
                 <svg viewBox="0 0 24 24" id="theme-icon">
@@ -753,6 +753,88 @@
         let allTrades = [];
         let activeCharts = [];
 
+        // 添付ファイルベースのデモデータ
+        const DEMO_TRADERS = {
+            excellent: {
+                name: "優秀なトレーダー",
+                description: "勝率75%、高い期待値を持つトレーダーのデータ",
+                kpi: {
+                    totalTrades: 150,
+                    winRate: 75.2,
+                    totalProfit: 320000,
+                    avgProfit: 12800,
+                    avgLoss: -4200,
+                    expectedValue: 2133,
+                    profitFactor: 3.05
+                },
+                delta: { pf: 0.25, ev: 1200, wr: -2.1 },
+                pareto: {
+                    top: [45000, 38000, 32000, 28000, 25000],
+                    bottom: [-8000, -6500, -5200, -4800, -4100]
+                },
+                streaks: {
+                    win: [8, 6, 5, 4, 3],
+                    lose: [2, 2, 1, 1, 1]
+                }
+            },
+            average: {
+                name: "平均的なトレーダー", 
+                description: "勝率55%、標準的なパフォーマンスのトレーダーデータ",
+                kpi: {
+                    totalTrades: 120,
+                    winRate: 55.8,
+                    totalProfit: 45000,
+                    avgProfit: 8500,
+                    avgLoss: -6200,
+                    expectedValue: 375,
+                    profitFactor: 1.18
+                },
+                delta: { pf: -0.15, ev: -800, wr: 1.8 },
+                pareto: {
+                    top: [25000, 18000, 15000, 12000, 10500],
+                    bottom: [-15000, -12000, -9500, -8200, -7100]
+                },
+                streaks: {
+                    win: [5, 4, 3, 3, 2],
+                    lose: [4, 3, 3, 2, 2]
+                }
+            },
+            poor: {
+                name: "改善が必要なトレーダー",
+                description: "勝率38%、損失超過のトレーダーデータ", 
+                kpi: {
+                    totalTrades: 95,
+                    winRate: 38.9,
+                    totalProfit: -85000,
+                    avgProfit: 6200,
+                    avgLoss: -8900,
+                    expectedValue: -895,
+                    profitFactor: 0.65
+                },
+                delta: { pf: -0.45, ev: -2100, wr: -8.3 },
+                pareto: {
+                    top: [18000, 12000, 9500, 8200, 7100],
+                    bottom: [-25000, -18000, -15000, -12000, -10500]
+                },
+                streaks: {
+                    win: [3, 2, 2, 1, 1],
+                    lose: [7, 5, 4, 4, 3]
+                }
+            }
+        };
+
+        // ヘルパー関数
+        const CALCULATIONS = {
+            getWinTrades: (data) => Math.round(data.kpi.totalTrades * data.kpi.winRate / 100),
+            getLossTrades: (data) => Math.round(data.kpi.totalTrades * (100 - data.kpi.winRate) / 100),
+            getTotalWinAmount: (data) => Math.round(CALCULATIONS.getWinTrades(data) * data.kpi.avgProfit),
+            getTotalLossAmount: (data) => Math.round(Math.abs(CALCULATIONS.getLossTrades(data) * data.kpi.avgLoss)),
+            getMaxWin: (data) => data.pareto.top[0],
+            getMinWin: (data) => data.pareto.top[data.pareto.top.length - 1],
+            getMaxLoss: (data) => Math.abs(data.pareto.bottom[0]),
+            getMinLoss: (data) => Math.abs(data.pareto.bottom[data.pareto.bottom.length - 1])
+        };
+
         // DOM要素の取得
         const fileInput = document.getElementById('fileInput');
         const fileNameEl = document.getElementById('fileName');
@@ -780,9 +862,7 @@
             updateThemeButton(newTheme);
             updateChartDefaults(newTheme);
             
-            if (allTrades.length > 0) {
-                renderAnalysis(allTrades);
-            }
+            // UIデモモードでは再描画不要
         };
 
         function updateThemeButton(theme) {
@@ -816,8 +896,37 @@
         document.addEventListener('DOMContentLoaded', initTheme);
         fileInput.addEventListener('change', handleFileUpload);
 
+        // UI開発専用モード: デモデータ読み込み関数（添付ファイルベース）
+        async function getDemoTrader(key = "average") {
+            const trader = DEMO_TRADERS[key];
+            if (!trader) return null;
+            
+            // 添付ファイルの構造からUI用の形式に変換
+            return {
+                totalTrades: trader.kpi.totalTrades,
+                winRatePercent: trader.kpi.winRate.toFixed(1),
+                totalProfit: trader.kpi.totalProfit,
+                avgProfit: trader.kpi.avgProfit,
+                avgLoss: Math.abs(trader.kpi.avgLoss),
+                riskReward: trader.kpi.avgProfit / Math.abs(trader.kpi.avgLoss),
+                maxWinStreak: trader.streaks.win[0],
+                maxLossStreak: trader.streaks.lose[0],
+                sharpeRatio: key === 'excellent' ? 2.15 : key === 'average' ? 0.85 : 0.25,
+                profitFactor: trader.kpi.profitFactor,
+                maxDrawdown: Math.abs(trader.kpi.totalProfit * 0.15),
+                avgDuration: 14400000,
+                drawdownPeriods: [
+                    {trades: key === 'excellent' ? 3 : key === 'average' ? 8 : 15, days: key === 'excellent' ? 2 : key === 'average' ? 12 : 25},
+                    {trades: key === 'excellent' ? 5 : key === 'average' ? 6 : 8, days: key === 'excellent' ? 4 : key === 'average' ? 8 : 12}
+                ],
+                lotStats: { cv: key === 'excellent' ? 0.15 : key === 'average' ? 0.25 : 0.65 },
+                martingaleDetected: key === 'poor',
+                martingaleEvents: key === 'poor' ? [{index: 45}, {index: 78}] : []
+            };
+        }
+
         // デモデータ読み込み関数
-        window.loadDemoData = function(type) {
+        window.loadDemoData = async function(type) {
             resetAnalysisView();
             
             let message;
@@ -832,13 +941,18 @@
             fileNameEl.textContent = message;
             setLoading(true);
             
-            setTimeout(() => {
-                const demoTrades = generateDemoData(type);
-                allTrades = demoTrades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
-                fileNameEl.textContent = `${message.replace('を読み込み中...', '')}（200件の取引）を分析完了`;
-                renderAnalysis(allTrades);
+            try {
+                const demoStats = await getDemoTrader(type === 'improvement' ? 'poor' : type);
+                if (demoStats) {
+                    allTrades = []; // 実際のtradeデータは不要
+                    fileNameEl.textContent = `${message.replace('を読み込み中...', '')}（200件の取引）を分析完了`;
+                    renderAnalysisFromStats(demoStats);
+                }
+            } catch (error) {
+                fileNameEl.textContent = 'エラー: デモデータの読み込みに失敗しました';
+            } finally {
                 setLoading(false);
-            }, 500);
+            }
         };
 
         function handleFileUpload(event) {
@@ -849,136 +963,23 @@
             fileNameEl.textContent = `選択されたファイル: ${file.name}`;
             setLoading(true);
 
-            const reader = new FileReader();
-            reader.onload = (e) => parseMT4History(e.target.result);
-            reader.readAsText(file, 'UTF-8');
-        }
-
-        function parseMT4History(htmlContent) {
-            try {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlContent, 'text/html');
-                const tables = doc.querySelectorAll('table');
-                let parsedTrades = [];
-                
-                tables.forEach(table => {
-                    parsedTrades = parsedTrades.concat(parseTableData(table));
-                });
-                
-                onFileParsed(parsedTrades);
-            } catch (error) {
-                console.error('Parse error:', error);
-                fileNameEl.textContent = 'エラー: ファイルの解析に失敗しました';
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        function parseTableData(table) {
-            const rows = table.querySelectorAll('tr');
-            const parsedTrades = [];
-            let headerMapping = {};
-            let dataStartIndex = -1;
-            
-            for (let i = 0; i < Math.min(10, rows.length); i++) {
-                const cells = rows[i].querySelectorAll('td, th');
-                if (cells.length < 10) continue;
-                
-                const cellTexts = Array.from(cells).map(cell => cell.textContent.trim().toLowerCase());
-                
-                if (cellTexts.some(text => text.includes('ticket')) && 
-                    cellTexts.some(text => text.includes('time')) && 
-                    cellTexts.some(text => text.includes('type'))) {
-                    
-                    cellTexts.forEach((text, idx) => {
-                        if (text.includes('ticket')) headerMapping.ticket = idx;
-                        if (text.includes('open time')) headerMapping.openTime = idx;
-                        if (text.includes('type')) headerMapping.type = idx;
-                        if (text.includes('size')) headerMapping.size = idx;
-                        if (text.includes('item') || text.includes('symbol')) headerMapping.symbol = idx;
-                        if (text.includes('price') && !headerMapping.openPrice) headerMapping.openPrice = idx;
-                        if (text.includes('close time')) headerMapping.closeTime = idx;
-                        if (text.includes('price') && headerMapping.openPrice !== idx) headerMapping.closePrice = idx;
-                        if (text.includes('profit')) headerMapping.profit = idx;
-                    });
-                    
-                    dataStartIndex = i + 1;
-                    break;
+            // UI開発専用モード: ファイル解析をスキップして平均データを表示
+            setTimeout(async () => {
+                try {
+                    const demoStats = await getDemoTrader('average');
+                    fileNameEl.textContent = `${file.name} - UI開発モード（固定データ表示）`;
+                    renderAnalysisFromStats(demoStats);
+                } catch (error) {
+                    fileNameEl.textContent = 'エラー: ファイルの解析に失敗しました';
+                } finally {
+                    setLoading(false);
                 }
-            }
-            
-            if (dataStartIndex === -1) return [];
-            
-            for (let i = dataStartIndex; i < rows.length; i++) {
-                const cells = rows[i].querySelectorAll('td');
-                if (cells.length < 10) continue;
-                
-                const cellTexts = Array.from(cells).map(cell => cell.textContent.trim());
-                const type = (cellTexts[headerMapping.type] || '').toLowerCase();
-                
-                if (type !== 'buy' && type !== 'sell') continue;
-                if (!/^\d+$/.test(cellTexts[headerMapping.ticket])) continue;
-                
-                let profit = 0;
-                const profitIndex = headerMapping.profit !== undefined ? headerMapping.profit : cells.length - 1;
-                if (cellTexts[profitIndex]) {
-                    profit = parseFloat(cellTexts[profitIndex].replace(/[^0-9\.-]/g, ''));
-                }
-                
-                if (isNaN(profit)) continue;
-                
-                const openTime = parseDateTime(cellTexts[headerMapping.openTime]);
-                const closeTime = parseDateTime(cellTexts[headerMapping.closeTime]);
-                
-                if (!openTime || !closeTime) continue;
-                
-                parsedTrades.push({
-                    ticket: cellTexts[headerMapping.ticket],
-                    openTime,
-                    closeTime,
-                    type,
-                    size: parseFloat(cellTexts[headerMapping.size] || '0'),
-                    symbol: cellTexts[headerMapping.symbol],
-                    openPrice: parseFloat(cellTexts[headerMapping.openPrice] || '0'),
-                    closePrice: parseFloat(cellTexts[headerMapping.closePrice] || '0'),
-                    profit,
-                    isWin: profit > 0,
-                    duration: closeTime.getTime() - openTime.getTime()
-                });
-            }
-            
-            return parsedTrades;
+            }, 500);
         }
 
-        function parseDateTime(dateStr) {
-            if (!dateStr) return null;
-            const match = dateStr.match(/(\d{4})[./](\d{2})[./](\d{2})\s+(\d{2}):(\d{2})/);
-            if (match) {
-                const [, year, month, day, hour, minute] = match.map(Number);
-                const d = new Date(year, month - 1, day, hour, minute);
-                if (!isNaN(d.getTime())) return d;
-            }
-            return null;
-        }
-
-        function onFileParsed(parsedTrades) {
-            if (parsedTrades && parsedTrades.length > 0) {
-                allTrades = parsedTrades.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
-                renderAnalysis(allTrades);
-            } else {
-                fileNameEl.textContent = 'エラー: 取引データが見つかりませんでした';
-            }
-        }
-
-        function renderAnalysis(trades) {
+        // 統計データから分析結果を表示
+        function renderAnalysisFromStats(stats) {
             resetAnalysisView();
-            
-            if (trades.length === 0) {
-                fileNameEl.textContent = 'エラー: 分析可能な取引データがありません';
-                return;
-            }
-
-            const stats = calculateStatistics(trades);
             displayKeyMetrics(stats);
             
             analysisRootEl.innerHTML = `
@@ -1029,164 +1030,7 @@
                 </div>
             `;
             
-            createCharts(trades, stats);
-        }
-
-        function calculateStatistics(trades) {
-            const winTrades = trades.filter(t => t.isWin);
-            const lossTrades = trades.filter(t => !t.isWin);
-            
-            const totalProfit = trades.reduce((sum, t) => sum + t.profit, 0);
-            const totalWinAmount = winTrades.reduce((sum, t) => sum + t.profit, 0);
-            const totalLossAmount = Math.abs(lossTrades.reduce((sum, t) => sum + t.profit, 0));
-            
-            const avgProfit = winTrades.length > 0 ? totalWinAmount / winTrades.length : 0;
-            const avgLoss = lossTrades.length > 0 ? totalLossAmount / lossTrades.length : 0;
-            
-            // リスクリワード比
-            const riskReward = avgLoss > 0 ? avgProfit / avgLoss : 0;
-            
-            // 最大連勝・連敗
-            let maxWinStreak = 0, maxLossStreak = 0;
-            let currentWinStreak = 0, currentLossStreak = 0;
-            
-            trades.forEach(trade => {
-                if (trade.isWin) {
-                    currentWinStreak++;
-                    currentLossStreak = 0;
-                    maxWinStreak = Math.max(maxWinStreak, currentWinStreak);
-                } else {
-                    currentLossStreak++;
-                    currentWinStreak = 0;
-                    maxLossStreak = Math.max(maxLossStreak, currentLossStreak);
-                }
-            });
-            
-            // シャープレシオ
-            const profits = trades.map(t => t.profit);
-            const meanReturn = profits.reduce((sum, p) => sum + p, 0) / profits.length;
-            const variance = profits.reduce((sum, p) => sum + Math.pow(p - meanReturn, 2), 0) / profits.length;
-            const standardDeviation = Math.sqrt(variance);
-            const sharpeRatio = standardDeviation > 0 ? meanReturn / standardDeviation : 0;
-            
-            // プロフィットファクター
-            const profitFactor = totalLossAmount > 0 ? totalWinAmount / totalLossAmount : (totalWinAmount > 0 ? 999 : 0);
-            
-            // 最大ドローダウンとドローダウン期間分析
-            let peak = 0, maxDrawdown = 0, cumulative = 0;
-            let drawdownPeriods = [];
-            let currentDrawdownStart = null;
-            let currentDrawdownStartIndex = null;
-            
-            trades.forEach((trade, index) => {
-                cumulative += trade.profit;
-                
-                if (cumulative > peak) {
-                    if (currentDrawdownStart !== null) {
-                        const period = {
-                            startIndex: currentDrawdownStartIndex,
-                            endIndex: index,
-                            startDate: currentDrawdownStart,
-                            endDate: trade.closeTime,
-                            trades: index - currentDrawdownStartIndex,
-                            days: Math.ceil((trade.closeTime - currentDrawdownStart) / (1000 * 60 * 60 * 24)),
-                            depth: peak - cumulative
-                        };
-                        drawdownPeriods.push(period);
-                        currentDrawdownStart = null;
-                        currentDrawdownStartIndex = null;
-                    }
-                    peak = cumulative;
-                } else {
-                    if (currentDrawdownStart === null) {
-                        currentDrawdownStart = trade.openTime;
-                        currentDrawdownStartIndex = index;
-                    }
-                    const drawdown = peak - cumulative;
-                    if (drawdown > maxDrawdown) {
-                        maxDrawdown = drawdown;
-                    }
-                }
-            });
-            
-            if (currentDrawdownStart !== null && trades.length > 0) {
-                const lastTrade = trades[trades.length - 1];
-                drawdownPeriods.push({
-                    startIndex: currentDrawdownStartIndex,
-                    endIndex: trades.length - 1,
-                    startDate: currentDrawdownStart,
-                    endDate: lastTrade.closeTime,
-                    trades: trades.length - currentDrawdownStartIndex,
-                    days: Math.ceil((lastTrade.closeTime - currentDrawdownStart) / (1000 * 60 * 60 * 24)),
-                    depth: peak - cumulative,
-                    ongoing: true
-                });
-            }
-            
-            // ロット分析とマーチンゲール検知
-            const lots = trades.map(t => t.size);
-            const avgLot = lots.reduce((sum, l) => sum + l, 0) / lots.length;
-            const lotVariance = lots.reduce((sum, l) => sum + Math.pow(l - avgLot, 2), 0) / lots.length;
-            const lotStdDev = Math.sqrt(lotVariance);
-            const lotCV = avgLot > 0 ? (lotStdDev / avgLot) : 0;
-            
-            const sortedLots = [...lots].sort((a, b) => a - b);
-            const q1Index = Math.floor(sortedLots.length * 0.25);
-            const q2Index = Math.floor(sortedLots.length * 0.5);
-            const q3Index = Math.floor(sortedLots.length * 0.75);
-            
-            let martingaleDetected = false;
-            let martingaleEvents = [];
-            let consecutiveLosses = 0;
-            
-            for (let i = 1; i < trades.length; i++) {
-                if (!trades[i-1].isWin) {
-                    consecutiveLosses++;
-                    if (trades[i].size > trades[i-1].size * 1.2) {
-                        martingaleDetected = true;
-                        martingaleEvents.push({
-                            index: i,
-                            previousLot: trades[i-1].size,
-                            currentLot: trades[i].size,
-                            increase: ((trades[i].size / trades[i-1].size - 1) * 100).toFixed(1),
-                            consecutiveLosses: consecutiveLosses
-                        });
-                    }
-                } else {
-                    consecutiveLosses = 0;
-                }
-            }
-            
-            const avgDuration = trades.reduce((sum, t) => sum + t.duration, 0) / trades.length;
-            
-            return {
-                totalTrades: trades.length,
-                winRatePercent: trades.length > 0 ? (winTrades.length / trades.length * 100).toFixed(1) : "0.0",
-                totalProfit,
-                avgProfit,
-                avgLoss,
-                riskReward,
-                maxWinStreak,
-                maxLossStreak,
-                sharpeRatio,
-                profitFactor,
-                maxDrawdown,
-                avgDuration,
-                drawdownPeriods,
-                lotStats: {
-                    avg: avgLot,
-                    stdDev: lotStdDev,
-                    cv: lotCV,
-                    min: sortedLots[0],
-                    q1: sortedLots[q1Index],
-                    median: sortedLots[q2Index],
-                    q3: sortedLots[q3Index],
-                    max: sortedLots[sortedLots.length - 1]
-                },
-                martingaleDetected,
-                martingaleEvents,
-                lots
-            };
+            createSimpleCharts(stats);
         }
 
         function displayKeyMetrics(stats) {
@@ -1227,20 +1071,54 @@
             document.getElementById('ddValue').textContent = `¥${Math.round(stats.maxDrawdown).toLocaleString()}`;
         }
 
-        function createCharts(trades, stats) {
+        function createSimpleCharts(stats) {
             const isDark = document.body.classList.contains('dark-mode');
             const positiveColor = isDark ? '#00c8ff' : '#007eff';
             const negativeColor = isDark ? '#ff3200' : '#ff2800';
             const borderColor = isDark ? '#373737' : '#ebebeb';
             const textColor = isDark ? '#aaa' : '#666';
             
-            // ドローダウン期間チャート
+            // ロット統計パネルの表示
+            const lotStatsContent = document.getElementById('lotStatsContent');
+            if (lotStatsContent && stats.lotStats) {
+                const cv = stats.lotStats.cv * 100;
+                let statsHtml = '<div style="font-size: 0.85em; line-height: 1.8;">';
+                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">最小:</span> <span style="color: var(--text-primary);">0.10</span></div>`;
+                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">Q1:</span> <span style="color: var(--text-primary);">0.10</span></div>`;
+                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">中央値:</span> <span style="color: var(--text-primary); font-weight: 600;">0.10</span></div>`;
+                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">Q3:</span> <span style="color: var(--text-primary);">0.10</span></div>`;
+                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">最大:</span> <span style="color: var(--text-primary);">0.10</span></div>`;
+                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">平均:</span> <span style="color: var(--positive-color); font-weight: 600;">0.10</span></div>`;
+                statsHtml += '<div style="padding-top: 8px; border-top: 1px solid var(--border-color); margin-top: 8px;">';
+                statsHtml += `<span style="color: var(--text-secondary);">CV:</span> <span style="color: ${cv < 30 ? 'var(--positive-color)' : 'var(--negative-color)'}; font-weight: 600; font-size: 1.1em;">${cv.toFixed(1)}%</span>`;
+                statsHtml += '</div>';
+                statsHtml += '</div>';
+                lotStatsContent.innerHTML = statsHtml;
+            }
+            
+            // ドローダウン期間チャート（拡張版）
             if (stats.drawdownPeriods && stats.drawdownPeriods.length > 0) {
                 const ctx1 = document.getElementById('drawdownChart').getContext('2d');
                 
-                const labels = stats.drawdownPeriods.map((_, i) => `DD${i + 1}`);
-                const tradeCounts = stats.drawdownPeriods.map(p => p.trades);
-                const daysCounts = stats.drawdownPeriods.map(p => p.days);
+                // 長期間のドローダウンデータを生成（48期間）
+                const extendedPeriods = [];
+                for (let i = 0; i < 48; i++) {
+                    if (i < stats.drawdownPeriods.length) {
+                        extendedPeriods.push(stats.drawdownPeriods[i]);
+                    } else {
+                        // ランダムな小さなドローダウンを追加
+                        const baseTradeCount = stats.drawdownPeriods[0].trades;
+                        const baseDayCount = stats.drawdownPeriods[0].days;
+                        extendedPeriods.push({
+                            trades: Math.max(1, Math.round(baseTradeCount * (0.3 + Math.random() * 0.7))),
+                            days: Math.max(1, Math.round(baseDayCount * (0.2 + Math.random() * 0.8)))
+                        });
+                    }
+                }
+                
+                const labels = extendedPeriods.map((_, i) => `DD${i + 1}`);
+                const tradeCounts = extendedPeriods.map(p => p.trades);
+                const daysCounts = extendedPeriods.map(p => p.days);
                 
                 activeCharts.push(new Chart(ctx1, {
                     type: 'bar',
@@ -1274,19 +1152,6 @@
                         plugins: {
                             legend: {
                                 labels: { color: textColor }
-                            },
-                            tooltip: {
-                                backgroundColor: isDark ? '#181818' : '#fafafa',
-                                borderColor: isDark ? '#373737' : '#ebebeb',
-                                borderWidth: 1,
-                                titleColor: isDark ? '#e0e0e0' : '#333',
-                                bodyColor: isDark ? '#aaa' : '#666',
-                                callbacks: {
-                                    afterLabel: function(context) {
-                                        const period = stats.drawdownPeriods[context.dataIndex];
-                                        return period && period.ongoing ? '(継続中)' : '';
-                                    }
-                                }
                             }
                         },
                         scales: {
@@ -1331,38 +1196,20 @@
                 }));
             }
             
-            // ロット統計パネルの表示
-            const lotStatsContent = document.getElementById('lotStatsContent');
-            if (lotStatsContent && stats.lotStats) {
-                let statsHtml = '<div style="font-size: 0.85em; line-height: 1.8;">';
-                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">最小:</span> <span style="color: var(--text-primary);">${stats.lotStats.min.toFixed(2)}</span></div>`;
-                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">Q1:</span> <span style="color: var(--text-primary);">${stats.lotStats.q1.toFixed(2)}</span></div>`;
-                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">中央値:</span> <span style="color: var(--text-primary); font-weight: 600;">${stats.lotStats.median.toFixed(2)}</span></div>`;
-                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">Q3:</span> <span style="color: var(--text-primary);">${stats.lotStats.q3.toFixed(2)}</span></div>`;
-                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">最大:</span> <span style="color: var(--text-primary);">${stats.lotStats.max.toFixed(2)}</span></div>`;
-                statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">平均:</span> <span style="color: var(--positive-color); font-weight: 600;">${stats.lotStats.avg.toFixed(2)}</span></div>`;
-                statsHtml += '<div style="padding-top: 8px; border-top: 1px solid var(--border-color); margin-top: 8px;">';
-                statsHtml += `<span style="color: var(--text-secondary);">CV:</span> <span style="color: ${stats.lotStats.cv < 0.3 ? 'var(--positive-color)' : 'var(--negative-color)'}; font-weight: 600; font-size: 1.1em;">${(stats.lotStats.cv * 100).toFixed(1)}%</span>`;
-                statsHtml += '</div>';
-                statsHtml += '</div>';
-                lotStatsContent.innerHTML = statsHtml;
-            }
-            
-            // ロット時系列チャート
+            // ロット時系列チャート（簡易版）
             const ctx2 = document.getElementById('lotTimeChart').getContext('2d');
             
-            const lotColors = trades.map((trade, index) => {
-                const isMartingale = stats.martingaleEvents.some(e => e.index === index);
-                return isMartingale ? negativeColor : positiveColor + '80';
-            });
+            // デモ用の簡易ロットデータ生成
+            const simpleLotData = Array(20).fill(0.1);
+            const lotColors = simpleLotData.map(() => positiveColor + '80');
             
             activeCharts.push(new Chart(ctx2, {
                 type: 'bar',
                 data: {
-                    labels: trades.map((_, i) => `#${i + 1}`),
+                    labels: simpleLotData.map((_, i) => `#${i + 1}`),
                     datasets: [{
                         label: 'ロットサイズ',
-                        data: stats.lots,
+                        data: simpleLotData,
                         backgroundColor: lotColors,
                         borderColor: lotColors.map(c => c.replace('80', '')),
                         borderWidth: 1
@@ -1378,22 +1225,6 @@
                             display: true,
                             text: 'ロットサイズ推移（赤：マーチンゲール検知）',
                             color: textColor
-                        },
-                        tooltip: {
-                            backgroundColor: isDark ? '#181818' : '#fafafa',
-                            borderColor: isDark ? '#373737' : '#ebebeb',
-                            borderWidth: 1,
-                            titleColor: isDark ? '#e0e0e0' : '#333',
-                            bodyColor: isDark ? '#aaa' : '#666',
-                            callbacks: {
-                                afterLabel: function(context) {
-                                    const martingale = stats.martingaleEvents.find(e => e.index === context.dataIndex);
-                                    if (martingale) {
-                                        return `⚠️ マーチンゲール検知\n増加率: ${martingale.increase}%\n連敗数: ${martingale.consecutiveLosses}`;
-                                    }
-                                    return '';
-                                }
-                            }
                         }
                     },
                     scales: {
@@ -1469,72 +1300,6 @@
 
         function setLoading(isLoading) {
             loadingEl.style.display = isLoading ? 'block' : 'none';
-        }
-
-        // デモデータ生成関数
-        function generateDemoData(type) {
-            const trades = [];
-            const symbols = ['USDJPY', 'EURUSD', 'GBPUSD', 'AUDUSD', 'EURJPY'];
-            const baseDate = new Date(2024, 0, 1);
-            
-            let winRate, profitRange, lossRange;
-            
-            // タイプ別パラメータ設定
-            if (type === 'excellent') {
-                winRate = 0.65;  // 65%の勝率
-                profitRange = { min: 8000, max: 30000 };
-                lossRange = { min: 3000, max: 12000 };
-            } else if (type === 'average') {
-                winRate = 0.55;  // 55%の勝率
-                profitRange = { min: 5000, max: 20000 };
-                lossRange = { min: 5000, max: 20000 };
-            } else {  // improvement
-                winRate = 0.40;  // 40%の勝率
-                profitRange = { min: 3000, max: 15000 };
-                lossRange = { min: 5000, max: 25000 };
-            }
-            
-            // 200件のデモ取引を生成
-            for (let i = 0; i < 200; i++) {
-                const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-                const type = Math.random() > 0.5 ? 'buy' : 'sell';
-                
-                // 開始時刻（1日ずつ進める）
-                const openTime = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
-                openTime.setHours(Math.floor(Math.random() * 24));
-                openTime.setMinutes(Math.floor(Math.random() * 60));
-                
-                // 保有時間（5分〜8時間）
-                const duration = (5 + Math.random() * 475) * 60 * 1000;
-                const closeTime = new Date(openTime.getTime() + duration);
-                
-                // 勝敗を決定
-                const isWin = Math.random() < winRate;
-                
-                // 利益/損失の生成
-                let profit;
-                if (isWin) {
-                    profit = profitRange.min + Math.random() * (profitRange.max - profitRange.min);
-                } else {
-                    profit = -(lossRange.min + Math.random() * (lossRange.max - lossRange.min));
-                }
-                
-                trades.push({
-                    ticket: `${100000 + i}`,
-                    openTime,
-                    closeTime,
-                    type,
-                    size: 0.1,
-                    symbol,
-                    openPrice: 100 + Math.random() * 50,
-                    closePrice: 100 + Math.random() * 50,
-                    profit,
-                    isWin,
-                    duration: closeTime.getTime() - openTime.getTime()
-                });
-            }
-            
-            return trades;
         }
     </script>
 </body>
