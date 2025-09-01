@@ -18,6 +18,7 @@
             --positive-color: #007eff;
             --negative-color: #ff2800;
             --neutral-color: #6b7280;
+            --warning-color: #ff8c00;
             
             /* カード用 */
             --card-bg: #ffffff;
@@ -46,6 +47,7 @@
                 --text-muted: #777;
                 --positive-color: #00c8ff;
                 --negative-color: #ff3200;
+                --warning-color: #ffaa00;
                 
                 --card-bg: #181818;
                 --card-border: #373737;
@@ -72,6 +74,7 @@
             --text-muted: #777;
             --positive-color: #00c8ff;
             --negative-color: #ff3200;
+            --warning-color: #ffaa00;
             
             --card-bg: #181818;
             --card-border: #373737;
@@ -366,7 +369,8 @@
         }
 
         .key-metric-card.warning {
-            border-color: var(--neutral-color);
+            border-color: var(--warning-color);
+            box-shadow: 0 2px 8px rgba(255, 140, 0, 0.15);
         }
 
         .key-metric-card.danger {
@@ -397,10 +401,117 @@
             color: var(--negative-color);
         }
 
+        .key-metric-value.warning {
+            color: var(--warning-color);
+        }
+
         .key-metric-description {
             font-size: 0.8em;
             color: var(--text-secondary);
             line-height: 1.3;
+        }
+
+        /* ツールチップ */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            color: var(--bg-primary);
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+            cursor: help;
+            transition: all 0.2s ease;
+        }
+
+        .tooltip-icon:hover {
+            background: var(--positive-color);
+            transform: scale(1.1);
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 280px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            text-align: left;
+            border-radius: 8px;
+            padding: 12px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8em;
+            line-height: 1.4;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--bg-primary) transparent transparent transparent;
+        }
+
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .tooltip-text {
+                width: 240px;
+                margin-left: -120px;
+                font-size: 0.75em;
+            }
+        }
+
+        /* リスク管理セクション */
+        .risk-metrics-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+        }
+
+        .risk-metrics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .risk-metrics-title {
+            font-size: 1.1em;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .risk-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
         }
 
         /* 分析セクション */
@@ -596,6 +707,10 @@
             .key-metrics-grid {
                 grid-template-columns: 1fr;
             }
+
+            .risk-metrics-grid {
+                grid-template-columns: 1fr;
+            }
             
             .analysis-section {
                 grid-template-columns: 1fr;
@@ -744,6 +859,81 @@
             </div>
         </div>
 
+        <!-- リスク管理アシストセクション -->
+        <div class="risk-metrics-section" id="riskAssistSection" style="display: none;">
+            <div class="risk-metrics-header">
+                <div class="risk-metrics-title">🛡️ リスク管理アシスト</div>
+                <div>高度な分析指標（安定性とリスク耐性）</div>
+            </div>
+            <div class="risk-metrics-grid">
+                <div class="key-metric-card" id="rrRiskCard">
+                    <div class="key-metric-label">
+                        RR比
+                        <div class="tooltip-container">
+                            <span class="tooltip-icon">?</span>
+                            <div class="tooltip-text">
+                                平均利益を平均損失で割った値。1.5以上が理想的で、リスクに対する適切なリターンを示します。1.0未満は平均的に損失が利益を上回っていることを意味します。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="key-metric-value" id="rrRiskValue">-</div>
+                    <div class="key-metric-description">リスクリワード比率</div>
+                </div>
+                <div class="key-metric-card" id="maxLossRiskCard">
+                    <div class="key-metric-label">
+                        最大連敗
+                        <div class="tooltip-container">
+                            <span class="tooltip-icon">?</span>
+                            <div class="tooltip-text">
+                                連続して損失を出した最大回数。4回以上で注意、6回以上で危険レベル。連敗が続くと心理的プレッシャーが増し、判断力が低下する可能性があります。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="key-metric-value" id="maxLossRiskValue">-</div>
+                    <div class="key-metric-description">連続損失の最大回数</div>
+                </div>
+                <div class="key-metric-card" id="maxWinRiskCard">
+                    <div class="key-metric-label">
+                        最大連勝
+                        <div class="tooltip-container">
+                            <span class="tooltip-icon">?</span>
+                            <div class="tooltip-text">
+                                連続して利益を出した最大回数。高い値は一貫した手法の証拠ですが、過度の自信につながることもあるため、冷静な判断を保つことが重要です。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="key-metric-value positive" id="maxWinRiskValue">-</div>
+                    <div class="key-metric-description">連続勝利の最大回数</div>
+                </div>
+                <div class="key-metric-card" id="volatilityCard">
+                    <div class="key-metric-label">
+                        ボラティリティ
+                        <div class="tooltip-container">
+                            <span class="tooltip-icon">?</span>
+                            <div class="tooltip-text">
+                                収益の変動性を示す指標。低い値（10%未満）は安定した取引を、高い値（30%以上）は大きなリスクを伴う取引スタイルを示します。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="key-metric-value" id="volatilityValue">-</div>
+                    <div class="key-metric-description">収益の変動性</div>
+                </div>
+                <div class="key-metric-card" id="calmarCard">
+                    <div class="key-metric-label">
+                        カルマー比
+                        <div class="tooltip-container">
+                            <span class="tooltip-icon">?</span>
+                            <div class="tooltip-text">
+                                年率リターンを最大ドローダウンで割った値。1.0以上が良好で、リスクに対するリターンの効率性を示します。値が高いほどリスク効率の良い運用と言えます。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="key-metric-value" id="calmarValue">-</div>
+                    <div class="key-metric-description">年率リターン÷最大DD</div>
+                </div>
+            </div>
+        </div>
+
         <div id="analysisRoot"></div>
     </div>
 
@@ -753,7 +943,7 @@
         let allTrades = [];
         let activeCharts = [];
 
-        // 添付ファイルベースのデモデータ
+        // 添付ファイルベースのデモデータ（risk_metrics追加）
         const DEMO_TRADERS = {
             excellent: {
                 name: "優秀なトレーダー",
@@ -766,6 +956,13 @@
                     avgLoss: -4200,
                     expectedValue: 2133,
                     profitFactor: 3.05
+                },
+                risk_metrics: {
+                    riskRewardRatio: 3.05,
+                    maxConsecutiveLosses: 3,
+                    maxConsecutiveWins: 8,
+                    volatility: 0.12,
+                    calmarRatio: 2.15
                 },
                 delta: { pf: 0.25, ev: 1200, wr: -2.1 },
                 pareto: {
@@ -789,6 +986,13 @@
                     expectedValue: 375,
                     profitFactor: 1.18
                 },
+                risk_metrics: {
+                    riskRewardRatio: 1.37,
+                    maxConsecutiveLosses: 4,
+                    maxConsecutiveWins: 5,
+                    volatility: 0.25,
+                    calmarRatio: 0.85
+                },
                 delta: { pf: -0.15, ev: -800, wr: 1.8 },
                 pareto: {
                     top: [25000, 18000, 15000, 12000, 10500],
@@ -810,6 +1014,13 @@
                     avgLoss: -8900,
                     expectedValue: -895,
                     profitFactor: 0.65
+                },
+                risk_metrics: {
+                    riskRewardRatio: 0.70,
+                    maxConsecutiveLosses: 7,
+                    maxConsecutiveWins: 3,
+                    volatility: 0.45,
+                    calmarRatio: 0.25
                 },
                 delta: { pf: -0.45, ev: -2100, wr: -8.3 },
                 pareto: {
@@ -841,6 +1052,7 @@
         const loadingEl = document.getElementById('loading');
         const analysisRootEl = document.getElementById('analysisRoot');
         const keyMetricsSectionEl = document.getElementById('keyMetricsSection');
+        const riskAssistSectionEl = document.getElementById('riskAssistSection');
 
         // テーマ管理
         function initTheme() {
@@ -921,7 +1133,15 @@
                 ],
                 lotStats: { cv: key === 'excellent' ? 0.15 : key === 'average' ? 0.25 : 0.65 },
                 martingaleDetected: key === 'poor',
-                martingaleEvents: key === 'poor' ? [{index: 45}, {index: 78}] : []
+                martingaleEvents: key === 'poor' ? [{index: 45}, {index: 78}] : [],
+                // リスク管理指標を追加
+                riskMetrics: trader.risk_metrics || {
+                    riskRewardRatio: trader.kpi.avgProfit / Math.abs(trader.kpi.avgLoss),
+                    maxConsecutiveLosses: trader.streaks.lose[0],
+                    maxConsecutiveWins: trader.streaks.win[0],
+                    volatility: key === 'excellent' ? 0.12 : key === 'average' ? 0.25 : 0.45,
+                    calmarRatio: key === 'excellent' ? 2.15 : key === 'average' ? 0.85 : 0.25
+                }
             };
         }
 
@@ -981,6 +1201,7 @@
         function renderAnalysisFromStats(stats) {
             resetAnalysisView();
             displayKeyMetrics(stats);
+            displayRiskMetrics(stats);
             
             analysisRootEl.innerHTML = `
                 <div class="analysis-section">
@@ -1069,6 +1290,43 @@
             
             // 最大ドローダウン
             document.getElementById('ddValue').textContent = `¥${Math.round(stats.maxDrawdown).toLocaleString()}`;
+        }
+
+        // リスク管理指標の表示
+        function displayRiskMetrics(stats) {
+            if (!stats.riskMetrics) return;
+            
+            riskAssistSectionEl.style.display = 'block';
+            
+            const metrics = stats.riskMetrics;
+            
+            // RR比
+            document.getElementById('rrRiskValue').textContent = metrics.riskRewardRatio ? metrics.riskRewardRatio.toFixed(2) : '—';
+            
+            // 最大連敗（色分けあり）
+            const maxLossValue = metrics.maxConsecutiveLosses || 0;
+            document.getElementById('maxLossRiskValue').textContent = maxLossValue > 0 ? maxLossValue : '—';
+            const maxLossCard = document.getElementById('maxLossRiskCard');
+            if (maxLossValue >= 6) {
+                maxLossCard.className = 'key-metric-card danger';
+                document.getElementById('maxLossRiskValue').className = 'key-metric-value negative';
+            } else if (maxLossValue >= 4) {
+                maxLossCard.className = 'key-metric-card warning';
+                document.getElementById('maxLossRiskValue').className = 'key-metric-value warning';
+            } else {
+                maxLossCard.className = 'key-metric-card';
+                document.getElementById('maxLossRiskValue').className = 'key-metric-value';
+            }
+            
+            // 最大連勝
+            document.getElementById('maxWinRiskValue').textContent = metrics.maxConsecutiveWins ? metrics.maxConsecutiveWins : '—';
+            
+            // ボラティリティ（%表示）
+            const volatilityPercent = metrics.volatility ? (metrics.volatility * 100).toFixed(2) + '%' : '—';
+            document.getElementById('volatilityValue').textContent = volatilityPercent;
+            
+            // カルマー比
+            document.getElementById('calmarValue').textContent = metrics.calmarRatio ? metrics.calmarRatio.toFixed(2) : '—';
         }
 
         function createSimpleCharts(stats) {
@@ -1294,6 +1552,7 @@
         function resetAnalysisView() {
             analysisRootEl.innerHTML = '';
             keyMetricsSectionEl.style.display = 'none';
+            riskAssistSectionEl.style.display = 'none';
             activeCharts.forEach(chart => chart.destroy());
             activeCharts = [];
         }
