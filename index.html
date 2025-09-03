@@ -29,10 +29,6 @@
             /* ボタン用 */
             --button-bg: #007eff;
             --button-hover-shadow: 0 4px 12px rgba(0, 126, 255, 0.3);
-            
-            /* Chart.js用のグリッド線の色 */
-            --chart-grid-color: rgba(0, 0, 0, 0.1);
-            --chart-text-color: #666;
         }
 
         /* ダークモード */
@@ -56,10 +52,6 @@
                 
                 --button-bg: #00c8ff;
                 --button-hover-shadow: 0 4px 12px rgba(0, 200, 255, 0.3);
-                
-                /* ダークモード用のChart.jsグリッド線 */
-                --chart-grid-color: rgba(255, 255, 255, 0.2);
-                --chart-text-color: #aaa;
             }
         }
 
@@ -83,10 +75,6 @@
             
             --button-bg: #00c8ff;
             --button-hover-shadow: 0 4px 12px rgba(0, 200, 255, 0.3);
-            
-            /* ダークモード用のChart.jsグリッド線 */
-            --chart-grid-color: rgba(255, 255, 255, 0.2);
-            --chart-text-color: #aaa;
         }
 
         /* 基本スタイル */
@@ -103,12 +91,14 @@
             color: var(--text-primary);
             line-height: 1.6;
             transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
         }
 
         .container { 
             max-width: 1200px; 
             margin: 0 auto; 
             padding: 40px 20px; 
+            overflow: hidden;
         }
 
         /* ヘッダー */
@@ -508,60 +498,14 @@
             font-weight: 600;
         }
 
+        .risk-metrics-title::before {
+            display: none;
+        }
+
         .risk-metrics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 16px;
-        }
-
-        /* 分析セクション */
-        .analysis-section { 
-            display: grid; 
-            gap: 16px; 
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            margin-bottom: 24px;
-        }
-
-        .metric-card { 
-            background: var(--card-bg);
-            border-radius: 12px; 
-            padding: 20px; 
-            border: 1px solid var(--border-color);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            cursor: pointer;
-        }
-
-        .metric-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--hover-shadow);
-        }
-
-        .metric-card h3 { 
-            color: var(--text-primary);
-            margin-bottom: 15px; 
-            font-size: 1em; 
-            font-weight: 600;
-        }
-
-        .metric-value { 
-            font-size: 2.5em; 
-            font-weight: 700; 
-            margin-bottom: 10px;
-            color: var(--text-primary);
-            line-height: 1;
-            text-align: center;
-        }
-
-        .metric-value.positive { 
-            color: var(--positive-color);
-        }
-
-        .metric-value.negative { 
-            color: var(--negative-color);
-        }
-
-        .metric-value.neutral { 
-            color: var(--text-primary);
         }
 
         /* チャートコンテナ */
@@ -712,10 +656,6 @@
                 grid-template-columns: 1fr;
             }
             
-            .analysis-section {
-                grid-template-columns: 1fr;
-            }
-            
             h1 {
                 font-size: 1.5em;
                 flex-direction: column;
@@ -766,12 +706,6 @@
     <div class="container">
         <header>
             <h1>
-                <div class="chart-icon">
-                    <div class="chart-bar"></div>
-                    <div class="chart-bar"></div>
-                    <div class="chart-bar"></div>
-                    <div class="chart-bar"></div>
-                </div>
                 ③安定性とリスク耐性
             </h1>
             <p>連勝連敗、ドローダウン、ロット規律などトレードの強さを分析＜UI開発＞</p>
@@ -812,7 +746,7 @@
         <!-- 重要指標セクション -->
         <div class="key-metrics-section" id="keyMetricsSection" style="display: none;">
             <div class="key-metrics-header">
-                <div class="key-metrics-title">📊 重要パフォーマンス指標</div>
+                <div class="key-metrics-title">重要パフォーマンス指標</div>
                 <div>トレード戦略の健全性を示す主要指標</div>
             </div>
             <div class="key-metrics-grid">
@@ -849,7 +783,7 @@
             </div>
             
             <div class="info-box">
-                <h4>📈 指標の評価基準</h4>
+                <h4>指標の評価基準</h4>
                 <ul>
                     <li><strong>リスクリワード比:</strong> 1.5以上で優秀、1.0以上で良好</li>
                     <li><strong>シャープレシオ:</strong> 1.5以上で優秀、1.0以上で良好、0.5以下で要改善</li>
@@ -862,7 +796,7 @@
         <!-- リスク管理アシストセクション -->
         <div class="risk-metrics-section" id="riskAssistSection" style="display: none;">
             <div class="risk-metrics-header">
-                <div class="risk-metrics-title">🛡️ リスク管理アシスト</div>
+                <div class="risk-metrics-title">リスク管理アシスト</div>
                 <div>高度な分析指標（安定性とリスク耐性）</div>
             </div>
             <div class="risk-metrics-grid">
@@ -943,18 +877,16 @@
         let allTrades = [];
         let activeCharts = [];
 
-        // 添付ファイルベースのデモデータ（risk_metrics追加）
+        // デモデータ
         const DEMO_TRADERS = {
             excellent: {
                 name: "優秀なトレーダー",
-                description: "勝率75%、高い期待値を持つトレーダーのデータ",
                 kpi: {
                     totalTrades: 150,
                     winRate: 75.2,
                     totalProfit: 320000,
                     avgProfit: 12800,
                     avgLoss: -4200,
-                    expectedValue: 2133,
                     profitFactor: 3.05
                 },
                 risk_metrics: {
@@ -964,11 +896,6 @@
                     volatility: 0.12,
                     calmarRatio: 2.15
                 },
-                delta: { pf: 0.25, ev: 1200, wr: -2.1 },
-                pareto: {
-                    top: [45000, 38000, 32000, 28000, 25000],
-                    bottom: [-8000, -6500, -5200, -4800, -4100]
-                },
                 streaks: {
                     win: [8, 6, 5, 4, 3],
                     lose: [2, 2, 1, 1, 1]
@@ -976,14 +903,12 @@
             },
             average: {
                 name: "平均的なトレーダー", 
-                description: "勝率55%、標準的なパフォーマンスのトレーダーデータ",
                 kpi: {
                     totalTrades: 120,
                     winRate: 55.8,
                     totalProfit: 45000,
                     avgProfit: 8500,
                     avgLoss: -6200,
-                    expectedValue: 375,
                     profitFactor: 1.18
                 },
                 risk_metrics: {
@@ -993,11 +918,6 @@
                     volatility: 0.25,
                     calmarRatio: 0.85
                 },
-                delta: { pf: -0.15, ev: -800, wr: 1.8 },
-                pareto: {
-                    top: [25000, 18000, 15000, 12000, 10500],
-                    bottom: [-15000, -12000, -9500, -8200, -7100]
-                },
                 streaks: {
                     win: [5, 4, 3, 3, 2],
                     lose: [4, 3, 3, 2, 2]
@@ -1005,14 +925,12 @@
             },
             poor: {
                 name: "改善が必要なトレーダー",
-                description: "勝率38%、損失超過のトレーダーデータ", 
                 kpi: {
                     totalTrades: 95,
                     winRate: 38.9,
                     totalProfit: -85000,
                     avgProfit: 6200,
                     avgLoss: -8900,
-                    expectedValue: -895,
                     profitFactor: 0.65
                 },
                 risk_metrics: {
@@ -1022,28 +940,11 @@
                     volatility: 0.45,
                     calmarRatio: 0.25
                 },
-                delta: { pf: -0.45, ev: -2100, wr: -8.3 },
-                pareto: {
-                    top: [18000, 12000, 9500, 8200, 7100],
-                    bottom: [-25000, -18000, -15000, -12000, -10500]
-                },
                 streaks: {
                     win: [3, 2, 2, 1, 1],
                     lose: [7, 5, 4, 4, 3]
                 }
             }
-        };
-
-        // ヘルパー関数
-        const CALCULATIONS = {
-            getWinTrades: (data) => Math.round(data.kpi.totalTrades * data.kpi.winRate / 100),
-            getLossTrades: (data) => Math.round(data.kpi.totalTrades * (100 - data.kpi.winRate) / 100),
-            getTotalWinAmount: (data) => Math.round(CALCULATIONS.getWinTrades(data) * data.kpi.avgProfit),
-            getTotalLossAmount: (data) => Math.round(Math.abs(CALCULATIONS.getLossTrades(data) * data.kpi.avgLoss)),
-            getMaxWin: (data) => data.pareto.top[0],
-            getMinWin: (data) => data.pareto.top[data.pareto.top.length - 1],
-            getMaxLoss: (data) => Math.abs(data.pareto.bottom[0]),
-            getMinLoss: (data) => Math.abs(data.pareto.bottom[data.pareto.bottom.length - 1])
         };
 
         // DOM要素の取得
@@ -1073,8 +974,6 @@
             
             updateThemeButton(newTheme);
             updateChartDefaults(newTheme);
-            
-            // UIデモモードでは再描画不要
         };
 
         function updateThemeButton(theme) {
@@ -1108,12 +1007,11 @@
         document.addEventListener('DOMContentLoaded', initTheme);
         fileInput.addEventListener('change', handleFileUpload);
 
-        // UI開発専用モード: デモデータ読み込み関数（添付ファイルベース）
+        // デモデータ変換関数
         async function getDemoTrader(key = "average") {
             const trader = DEMO_TRADERS[key];
             if (!trader) return null;
             
-            // 添付ファイルの構造からUI用の形式に変換
             return {
                 totalTrades: trader.kpi.totalTrades,
                 winRatePercent: trader.kpi.winRate.toFixed(1),
@@ -1134,14 +1032,7 @@
                 lotStats: { cv: key === 'excellent' ? 0.15 : key === 'average' ? 0.25 : 0.65 },
                 martingaleDetected: key === 'poor',
                 martingaleEvents: key === 'poor' ? [{index: 45}, {index: 78}] : [],
-                // リスク管理指標を追加
-                riskMetrics: trader.risk_metrics || {
-                    riskRewardRatio: trader.kpi.avgProfit / Math.abs(trader.kpi.avgLoss),
-                    maxConsecutiveLosses: trader.streaks.lose[0],
-                    maxConsecutiveWins: trader.streaks.win[0],
-                    volatility: key === 'excellent' ? 0.12 : key === 'average' ? 0.25 : 0.45,
-                    calmarRatio: key === 'excellent' ? 2.15 : key === 'average' ? 0.85 : 0.25
-                }
+                riskMetrics: trader.risk_metrics
             };
         }
 
@@ -1151,11 +1042,11 @@
             
             let message;
             if (type === 'excellent') {
-                message = '優秀なトレーダーデータ（勝率65%）を読み込み中...';
+                message = '優秀なトレーダーデータを読み込み中...';
             } else if (type === 'average') {
-                message = '平均的なトレーダーデータ（勝率55%）を読み込み中...';
+                message = '平均的なトレーダーデータを読み込み中...';
             } else {
-                message = '改善が必要なトレーダーデータ（勝率40%）を読み込み中...';
+                message = '改善が必要なトレーダーデータを読み込み中...';
             }
             
             fileNameEl.textContent = message;
@@ -1164,8 +1055,8 @@
             try {
                 const demoStats = await getDemoTrader(type === 'improvement' ? 'poor' : type);
                 if (demoStats) {
-                    allTrades = []; // 実際のtradeデータは不要
-                    fileNameEl.textContent = `${message.replace('を読み込み中...', '')}（200件の取引）を分析完了`;
+                    allTrades = [];
+                    fileNameEl.textContent = `${message.replace('を読み込み中...', '')}を分析完了`;
                     renderAnalysisFromStats(demoStats);
                 }
             } catch (error) {
@@ -1183,7 +1074,6 @@
             fileNameEl.textContent = `選択されたファイル: ${file.name}`;
             setLoading(true);
 
-            // UI開発専用モード: ファイル解析をスキップして平均データを表示
             setTimeout(async () => {
                 try {
                     const demoStats = await getDemoTrader('average');
@@ -1204,35 +1094,6 @@
             displayRiskMetrics(stats);
             
             analysisRootEl.innerHTML = `
-                <div class="analysis-section">
-                    <div class="metric-card">
-                        <h3>総取引数</h3>
-                        <div class="metric-value neutral">${stats.totalTrades}回</div>
-                    </div>
-                    <div class="metric-card">
-                        <h3>勝率</h3>
-                        <div class="metric-value ${parseFloat(stats.winRatePercent) >= 50 ? 'positive' : 'negative'}">${stats.winRatePercent}%</div>
-                    </div>
-                    <div class="metric-card">
-                        <h3>総損益</h3>
-                        <div class="metric-value ${stats.totalProfit >= 0 ? 'positive' : 'negative'}">
-                            ¥${Math.round(stats.totalProfit).toLocaleString()}
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <h3>平均利益</h3>
-                        <div class="metric-value positive">¥${Math.round(stats.avgProfit).toLocaleString()}</div>
-                    </div>
-                    <div class="metric-card">
-                        <h3>平均損失</h3>
-                        <div class="metric-value negative">¥${Math.round(stats.avgLoss).toLocaleString()}</div>
-                    </div>
-                    <div class="metric-card">
-                        <h3>平均保有時間</h3>
-                        <div class="metric-value neutral">${formatDuration(stats.avgDuration)}</div>
-                    </div>
-                </div>
-                
                 <div class="chart-container">
                     <h3>ドローダウン期間分析</h3>
                     <canvas id="drawdownChart"></canvas>
@@ -1339,7 +1200,7 @@
             // ロット統計パネルの表示
             const lotStatsContent = document.getElementById('lotStatsContent');
             if (lotStatsContent && stats.lotStats) {
-                const cv = stats.lotStats.cv * 100;
+                const cvValue = stats.lotStats.cv * 100;
                 let statsHtml = '<div style="font-size: 0.85em; line-height: 1.8;">';
                 statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">最小:</span> <span style="color: var(--text-primary);">0.10</span></div>`;
                 statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">Q1:</span> <span style="color: var(--text-primary);">0.10</span></div>`;
@@ -1348,23 +1209,21 @@
                 statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">最大:</span> <span style="color: var(--text-primary);">0.10</span></div>`;
                 statsHtml += `<div style="margin-bottom: 8px;"><span style="color: var(--text-secondary);">平均:</span> <span style="color: var(--positive-color); font-weight: 600;">0.10</span></div>`;
                 statsHtml += '<div style="padding-top: 8px; border-top: 1px solid var(--border-color); margin-top: 8px;">';
-                statsHtml += `<span style="color: var(--text-secondary);">CV:</span> <span style="color: ${cv < 30 ? 'var(--positive-color)' : 'var(--negative-color)'}; font-weight: 600; font-size: 1.1em;">${cv.toFixed(1)}%</span>`;
+                statsHtml += `<span style="color: var(--text-secondary);">CV:</span> <span style="color: ${cvValue < 30 ? 'var(--positive-color)' : 'var(--negative-color)'}; font-weight: 600; font-size: 1.1em;">${cvValue.toFixed(1)}%</span>`;
                 statsHtml += '</div>';
                 statsHtml += '</div>';
                 lotStatsContent.innerHTML = statsHtml;
             }
             
-            // ドローダウン期間チャート（拡張版）
+            // ドローダウン期間チャート
             if (stats.drawdownPeriods && stats.drawdownPeriods.length > 0) {
                 const ctx1 = document.getElementById('drawdownChart').getContext('2d');
                 
-                // 長期間のドローダウンデータを生成（48期間）
                 const extendedPeriods = [];
                 for (let i = 0; i < 48; i++) {
                     if (i < stats.drawdownPeriods.length) {
                         extendedPeriods.push(stats.drawdownPeriods[i]);
                     } else {
-                        // ランダムな小さなドローダウンを追加
                         const baseTradeCount = stats.drawdownPeriods[0].trades;
                         const baseDayCount = stats.drawdownPeriods[0].days;
                         extendedPeriods.push({
@@ -1454,20 +1313,41 @@
                 }));
             }
             
-            // ロット時系列チャート（簡易版）
+            // ロット時系列チャート
             const ctx2 = document.getElementById('lotTimeChart').getContext('2d');
             
-            // デモ用の簡易ロットデータ生成
-            const simpleLotData = Array(20).fill(0.1);
-            const lotColors = simpleLotData.map(() => positiveColor + '80');
+            // トレーダータイプに応じたロットデータ生成
+            let lotData = [];
+            const cvRatio = stats.lotStats.cv;
+            
+            if (cvRatio < 0.2) { // 優秀なトレーダー: 一貫したロット
+                lotData = Array(20).fill().map(() => 0.10 + (Math.random() - 0.5) * 0.01);
+            } else if (cvRatio < 0.4) { // 平均的なトレーダー: 適度な変動
+                lotData = Array(20).fill().map(() => 0.10 + (Math.random() - 0.5) * 0.05);
+            } else { // 改善が必要なトレーダー: 大きな変動
+                lotData = Array(20).fill().map((_, i) => {
+                    if (stats.martingaleDetected && (i === 8 || i === 15)) {
+                        return 0.20 + Math.random() * 0.10; // マーチンゲール検知箇所
+                    }
+                    return 0.05 + Math.random() * 0.15;
+                });
+            }
+            
+            // マーチンゲール検知箇所の色分け
+            const lotColors = lotData.map((lot, i) => {
+                if (stats.martingaleDetected && (i === 8 || i === 15)) {
+                    return negativeColor + '80'; // 赤色
+                }
+                return positiveColor + '80';
+            });
             
             activeCharts.push(new Chart(ctx2, {
                 type: 'bar',
                 data: {
-                    labels: simpleLotData.map((_, i) => `#${i + 1}`),
+                    labels: lotData.map((_, i) => `#${i + 1}`),
                     datasets: [{
                         label: 'ロットサイズ',
-                        data: simpleLotData,
+                        data: lotData,
                         backgroundColor: lotColors,
                         borderColor: lotColors.map(c => c.replace('80', '')),
                         borderWidth: 1
@@ -1495,7 +1375,12 @@
                                 text: 'ロットサイズ',
                                 color: textColor
                             },
-                            ticks: { color: textColor },
+                            ticks: { 
+                                color: textColor,
+                                callback: function(value) {
+                                    return value.toFixed(2);
+                                }
+                            },
                             grid: { color: borderColor }
                         }
                     }
@@ -1504,21 +1389,21 @@
             
             // 警告メッセージの表示
             const warningEl = document.getElementById('lotAnalysisWarning');
-            const cv = stats.lotStats.cv * 100;
+            const cvPercentage = stats.lotStats.cv * 100;
             
             let warningHtml = '<div class="warning-grid">';
             
             // CV評価
             warningHtml += '<div class="warning-item">';
             warningHtml += '<h4>ロット一貫性評価</h4>';
-            if (cv < 10) {
-                warningHtml += '<div class="warning-excellent">✅ 優秀: 非常に一貫したロットサイズ (CV=' + cv.toFixed(1) + '%)</div>';
-            } else if (cv < 30) {
-                warningHtml += '<div class="warning-good">✅ 良好: 一貫したロットサイズ (CV=' + cv.toFixed(1) + '%)</div>';
-            } else if (cv < 50) {
-                warningHtml += '<div class="warning-caution">⚠️ 注意: ロットサイズにばらつきあり (CV=' + cv.toFixed(1) + '%)</div>';
+            if (cvPercentage < 10) {
+                warningHtml += '<div class="warning-excellent">✅ 優秀: 非常に一貫したロットサイズ (CV=' + cvPercentage.toFixed(1) + '%)</div>';
+            } else if (cvPercentage < 30) {
+                warningHtml += '<div class="warning-good">✅ 良好: 一貫したロットサイズ (CV=' + cvPercentage.toFixed(1) + '%)</div>';
+            } else if (cvPercentage < 50) {
+                warningHtml += '<div class="warning-caution">⚠️ 注意: ロットサイズにばらつきあり (CV=' + cvPercentage.toFixed(1) + '%)</div>';
             } else {
-                warningHtml += '<div class="warning-danger">❌ 警告: ロットサイズが不安定 (CV=' + cv.toFixed(1) + '%)</div>';
+                warningHtml += '<div class="warning-danger">❌ 警告: ロットサイズが不安定 (CV=' + cvPercentage.toFixed(1) + '%)</div>';
             }
             warningHtml += '</div>';
             
